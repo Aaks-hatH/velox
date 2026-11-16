@@ -1,0 +1,11 @@
+.DS_Store
+
+# Python web app
+python-app/.venv/
+python-app/.env
+python-app/data/
+__pycache__/
+.pytest_cache/
+
+# Upload package for PythonAnywhere (made from git, not committed)
+velox-health.zip

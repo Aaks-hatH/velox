@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "_parts.html" import icon, status, demo_badge, bullets %}
+{% block title %}{{ metric.short_title }} · Velox Health{% endblock %}
+{% block ask_hint %}Ask AI about your {{ metric.short_title }}{% endblock %}
+{% block ask_default %}How has my {{ metric.title.lower() }} changed this week?{% endblock %}
+
+{% block content %}
+<a class="back" href="{{ url_for('today') }}">‹ Today</a>
+
+<header class="metric-head">
+  <div class="row between">
+    <span class="row">{{ icon(metric, 30, morph=True) }} <b>{{ metric.title }}</b></span>
+    {{ demo_badge(snapshot) }}
+  </div>
+  {% if series.latest %}
+    <div class="hero-value">
+      <span class="serif" style="view-transition-name: value-{{ metric.id }}">{{ fmt(metric, series.latest.value, include_unit=metric.id == "sleep") }}</span>
+      {% if metric.id != "sleep" %}<span class="serif unit">{{ metric.unit }}</span>{% endif %}
+    </div>
+  {% endif %}
+  {{ status(assessment) }}
+</header>
+
+<section class="panel">
+  <nav class="segments" aria-label="Chart range">
+    {% for key in ranges %}
+      <a href="?range={{ key }}" class="{{ 'on' if key == range }}">{{ key }}</a>
+    {% endfor %}
+  </nav>
+  {% if chart.svg %}
+    <div class="row between chart-caption">
+      <span class="muted" data-caption-label>{{ {"W": "Week", "M": "Month", "3M": "3 months"}[range] }} average. Drag to inspect</span>
+      <b data-caption-value>{{ fmt(metric, average) if average is not none else "" }}</b>
+    </div>
+    <div class="chart-wrap" data-points='{{ chart.points | tojson }}'>{{ chart.svg | safe }}</div>
+    {% if assessment.baseline %}<p class="muted small legend"><i style="background: {{ metric.color }}"></i>Shaded band: your usual range over the previous 4 weeks</p>{% endif %}
+  {% else %}
+    <p class="muted empty">No {{ metric.title.lower() }} data in this period.</p>
+  {% endif %}
+</section>
+
+<div class="tiles">
+  <div class="panel tile"><span class="muted small">Last 7 days</span>
+    <b class="serif">{{ fmt(metric, assessment.recent.median) if assessment.recent else "—" }}</b>
+    <span class="muted small">{{ "median, %d of %d days" % (assessment.recent.count, assessment.recent.expected_days) if assessment.recent else "no recent data" }}</span></div>
+  <div class="panel tile"><span class="muted small">Your usual</span>
+    <b class="serif">{{ fmt(metric, assessment.baseline.median) if assessment.baseline else "—" }}</b>
+    <span class="muted small">{{ "± " ~ fmt(metric, assessment.baseline.spread) ~ " over 4 weeks" if assessment.baseline else "needs 14+ days" }}</span></div>
+  <div class="panel tile"><span class="muted small">Trend</span>
+    <b class="serif">{{ trend }}</b><span class="muted small">robust slope over 5 weeks</span></div>
+  <div class="panel tile"><span class="muted small">Change vs usual</span>
+    <b class="serif">{{ fmt_change(metric, assessment.recent.median - assessment.baseline.median) if assessment.recent and assessment.baseline else "—" }}</b>
+    <span class="muted small">last 7 days vs prior 4 weeks</span></div>
+</div>
+
+<section class="panel">
+  {% if assessment.outcome == "unusual" %}
+    {% set f = assessment.finding %}
+    <div class="row between"><h3 class="flag-text">{{ f.headline }}</h3><span class="pill">{{ f.confidence | capitalize }} confidence</span></div>
+    {{ bullets(f.evidence, "Evidence", "reef") }}
+    {{ bullets(f.limitations, "Limitations", "muted") }}
+  {% elif assessment.outcome == "typical" %}
+    <h3 class="usual-text">Within your usual range</h3>
+    <p class="muted">The last 7 days don't differ in a statistically meaningful way from your previous 4 weeks. This doesn't rule anything out.</p>
+  {% else %}
+    <h3>Not enough data to compare</h3>
+    <p class="muted">{{ assessment.reason }}</p>
+  {% endif %}
+</section>
+
+{% if nights %}
+<section class="panel">
+  <h3>Recent nights</h3>
+  {% for n in nights %}
+    <div class="row between night"><span>{{ n.day.strftime("%a %-d") }}</span>
+      <span class="muted">{{ n.bedtime.strftime("%-I:%M %p").lower() }} → {{ n.wake_time.strftime("%-I:%M %p").lower() }}</span>
+      <b>{{ fmt_hours(n.asleep_hours) }}</b></div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="panel">
+  <h3>Data quality</h3>
+  <div class="row between"><span>Days with data (5 weeks)</span><b>{{ assessment.quality.observed_days }} / {{ assessment.quality.expected_days }}</b></div>
+  {% set cov = assessment.quality.coverage %}
+  <div class="meter"><span style="width: {{ (cov * 100) | round }}%" class="{{ 'good' if cov >= 0.8 else ('warn' if cov >= 0.5 else 'low') }}"></span></div>
+  {% if assessment.quality.issues %}{{ bullets(assessment.quality.issues, "", "flag") }}{% else %}<p class="muted small">No gaps or problems detected.</p>{% endif %}
+</section>
+
+<section class="panel">
+  <h3>About this measurement</h3>
+  <p class="muted">{{ metric.about }}</p>
+</section>
+{% endblock %}

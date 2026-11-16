@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_parts.html" import icon, demo_badge, bullets %}
+{% block title %}Patterns · Velox Health{% endblock %}
+
+{% block content %}
+<header class="row between baseline page-head">
+  <h1>Patterns</h1>{{ demo_badge(snapshot) }}
+</header>
+<p class="muted">Your last 7 days compared with your previous 4 weeks. These are statistical observations, not medical findings.</p>
+
+{% if not snapshot %}
+  <section class="panel empty"><p class="muted">No data loaded yet. Open Settings to upload an export or use Demo Mode.</p></section>
+{% else %}
+  <h2 class="section-head">Unusual changes <span class="muted small">{{ groups.unusual|length }}</span></h2>
+  {% for a in groups.unusual %}
+    {% set f = a.finding %}
+    <details class="panel finding">
+      <summary>
+        <div class="row">{{ icon(f.metric, 40) }}
+          <span><b>{{ f.headline }}</b><br><span class="muted small">{{ f.recent.start.strftime("%-d %b") }} – {{ f.recent.last_day.strftime("%-d %b") }}</span></span></div>
+        <div class="row between compare">
+          <span><span class="muted small">Usual</span><b class="serif">{{ fmt(f.metric, f.baseline.median) }}</b></span>
+          <span class="muted">→</span>
+          <span><span class="muted small">Last 7 days</span><b class="serif">{{ fmt(f.metric, f.recent.median) }}</b></span>
+          <span class="grow right"><b class="serif flag-text">{{ fmt_change(f.metric, f.change) }}</b><br><span class="pill">{{ f.confidence | capitalize }} confidence</span></span>
+        </div>
+        <span class="link toggle">Show evidence</span>
+      </summary>
+      <div class="more">
+        {{ bullets(f.evidence, "Evidence", "reef") }}
+        {{ bullets(f.limitations, "Limitations", "muted") }}
+        <a class="link" href="{{ url_for('metric_page', metric_id=f.metric.id) }}">Open {{ f.metric.short_title }} chart</a>
+      </div>
+    </details>
+  {% else %}
+    <section class="panel calm-panel"><b>No unusual changes</b>
+      <p class="muted">Nothing stands out against your usual ranges. That doesn't rule anything out. It only means no statistical change was found.</p></section>
+  {% endfor %}
+
+  {% for key, title in [("typical", "Within your usual range"), ("insufficient", "Not enough data")] %}
+    {% if groups[key] %}
+      <h2 class="section-head">{{ title }} <span class="muted small">{{ groups[key]|length }}</span></h2>
+      <div class="panel ledger">
+        {% for a in groups[key] %}
+          <a class="ledger-row" href="{{ url_for('metric_page', metric_id=a.metric.id) }}">
+            {{ icon(a.metric) }}
+            <span class="grow"><b>{{ a.metric.title }}</b>
+              <span class="muted small">{{ ("7-day median " ~ fmt(a.metric, a.recent.median)) if key == "typical" else a.reason }}</span></span>
+            <span class="muted">›</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+
+  <details class="panel">
+    <summary><b class="serif">How patterns are found</b></summary>
+    {{ bullets([
+      "Your usual = the median of the 28 days before the last week. Day-to-day variation is measured with the median absolute deviation, which isn't thrown off by a single odd day.",
+      "A change is shown only if the last 7 days' median is at least 2× your usual variation away, at least half of those days are outside your usual range, and the difference is larger than a small noise floor.",
+      "At least 14 baseline days and 4 recent days are required; otherwise Velox Health says there isn't enough data.",
+      "Heart rate leaves out workouts. Steps and distance ignore today because the day isn't finished.",
+      "No population 'normal ranges' are used. Only your own history."
+    ], "", "reef") }}
+  </details>
+{% endif %}
+{% endblock %}

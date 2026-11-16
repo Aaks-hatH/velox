@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Ask · Velox Health{% endblock %}
+{% block body_class %}ask-page{% endblock %}
+
+{% block content %}
+<header class="page-head"><h1>Ask</h1></header>
+
+<section class="panel intro">
+  <div class="row between baseline">
+    <h2>Ask about your measurements</h2>
+    <span class="pill">{{ "Cloud AI" if settings.ai_consent and ai_ready else "Not connected" }}</span>
+  </div>
+  <p class="muted small">
+    Answers use only your loaded {{ "demo " if settings.demo_mode }}data, keep facts separate from interpretations,
+    and never diagnose or give medication advice. Questions aren't saved.
+    {% if settings.ai_consent and ai_ready %}A summary of your measurements (not raw readings) is sent to the cloud AI.{% endif %}
+  </p>
+</section>
+
+{# app.js adds your questions and the answers here. #}
+<div id="chat" class="chat" aria-live="polite"></div>
+
+<div class="suggestions" id="suggestions">
+  <h3 class="muted">Try asking</h3>
+  {% for q in questions %}<button type="button" class="suggestion" data-question="{{ q }}">{{ q }} <span aria-hidden="true">↑</span></button>{% endfor %}
+</div>
+
+<form id="ask-form" class="ask-bar" autocomplete="off">
+  <input id="question" name="question" placeholder="Ask about your data" maxlength="500" aria-label="Your question">
+  <button type="submit" aria-label="Send question">↑</button>
+</form>
+{% endblock %}

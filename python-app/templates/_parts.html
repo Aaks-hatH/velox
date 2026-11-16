@@ -1,0 +1,58 @@
+{# Small reusable pieces ("macros"), used by the other templates with {% from "_parts.html" import ... %} #}
+
+{# Line icons for each measurement, drawn in the measurement's colour. #}
+{# morph=True gives the icon a name, so it can fly between the Today list and the measurement page. #}
+{% macro icon(metric, size=34, morph=False) -%}
+<span class="icon" style="--c: {{ metric.color }}; width: {{ size }}px; height: {{ size }}px;
+      {%- if morph %} view-transition-name: icon-{{ metric.id }};{% endif %}" aria-hidden="true">
+  <svg viewBox="0 0 24 24" width="{{ (size * 0.5) | int }}" height="{{ (size * 0.5) | int }}" fill="none"
+       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  {%- if metric.id == "resting_hr" -%}
+    <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
+  {%- elif metric.id == "hrv" -%}
+    <path d="M2 12h4l2-5 3 10 3-8 2 3h6"/>
+  {%- elif metric.id == "heart_rate" -%}
+    <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/><path d="M7 11h3l1-2 2 4 1-2h3"/>
+  {%- elif metric.id == "breathing" -%}
+    <path d="M12 4v7"/><path d="M12 11c-2 0-3-2-5-2-2 0-3 3-3 6 0 3 1 5 3 5 3 0 5-3 5-9z"/><path d="M12 11c2 0 3-2 5-2 2 0 3 3 3 6 0 3-1 5-3 5-3 0-5-3-5-9z"/>
+  {%- elif metric.id == "sleep" -%}
+    <path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/>
+  {%- elif metric.id == "wrist_temp" -%}
+    <path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/>
+  {%- elif metric.id == "steps" -%}
+    <path d="M8 3c2 0 3 2 3 5s-1 5-3 5-3-2-3-5 1-5 3-5z"/><path d="M6 16h4v3a2 2 0 0 1-4 0z"/><path d="M16 7c2 0 3 2 3 5s-1 4-3 4-3-1-3-4 1-5 3-5z"/>
+  {%- else -%}
+    <circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/>
+  {%- endif -%}
+  </svg>
+</span>
+{%- endmacro %}
+
+{# "Higher than usual" / "Usual" / "Needs more data" #}
+{% macro status(assessment) -%}
+  {%- if assessment.outcome == "unusual" -%}
+    <span class="status flag">{{ "↗" if assessment.finding.direction == "up" else "↘" }} {{ assessment.finding.word | capitalize }} than usual</span>
+  {%- elif assessment.outcome == "typical" -%}
+    <span class="status"><i class="dot"></i> Usual</span>
+  {%- else -%}
+    <span class="status"><i class="dot hollow"></i> Needs more data</span>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro demo_badge(snapshot) -%}
+  {%- if snapshot and snapshot.is_demo %}<span class="demo-badge" title="Fictional sample data">Demo data</span>{% endif -%}
+{%- endmacro %}
+
+{% macro bullets(items, title="", tone="") -%}
+  {%- if items %}
+  <div class="bullets {{ tone }}">
+    {% if title %}<h4>{{ title }}</h4>{% endif %}
+    <ul>{% for item in items %}<li>{{ item }}</li>{% endfor %}</ul>
+  </div>
+  {%- endif %}
+{%- endmacro %}
+
+{# Small four-point spark used to label anything the AI assistant wrote. #}
+{% macro ai_mark() -%}
+<svg class="ai-mark" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 0c.6 4.3 3.7 7.4 8 8-4.3.6-7.4 3.7-8 8-.6-4.3-3.7-7.4-8-8 4.3-.6 7.4-3.7 8-8z"/></svg>
+{%- endmacro %}

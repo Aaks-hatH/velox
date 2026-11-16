@@ -1,0 +1,72 @@
+<!doctype html>
+{# The frame shared by every page: head, page content, and the tab bar at the bottom. #}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <title>{% block title %}Velox Health{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    // Refreshing (or opening the app in a new tab) always starts again from the introduction.
+    // Finishing or skipping the introduction marks this tab as "entered" (see app.js).
+    try {
+      const reloaded = performance.getEntriesByType("navigation")[0]?.type === "reload";
+      if (location.pathname === "{{ url_for('onboarding') }}") {
+        sessionStorage.removeItem("entered");
+      } else if (reloaded || !sessionStorage.getItem("entered")) {
+        location.replace("{{ url_for('onboarding') }}");
+      }
+    } catch (e) {}
+
+    // Arriving from a planet on Today? Cover the page in its colour before anything draws,
+    // so the colour wipe can carry on seamlessly (see .warp in style.css).
+    try {
+      const color = sessionStorage.getItem("planetWarp");
+      if (color) {
+        sessionStorage.removeItem("planetWarp");
+        document.documentElement.classList.add("from-planet");
+        document.documentElement.style.setProperty("--warp-color", color);
+      }
+    } catch (e) {}
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {# Before you're in the app (onboarding) the page stays plain black; inside it, the flowing red light. #}
+  {% if self.body_class() != "onboarding" %}<canvas class="flow-bg" id="flow-bg" aria-hidden="true"></canvas>{% endif %}
+  <div class="warp" id="warp" aria-hidden="true"></div>
+  <main class="page">
+    {% block content %}{% endblock %}
+    <p class="watermark">@Jayant-Chris-project</p>
+  </main>
+
+  {% if settings.onboarded and self.body_class() != "onboarding" %}
+  {% set here = request.endpoint %}
+  {% from "_parts.html" import ai_mark %}
+  {# "Ask AI" on every page (the Ask page has its own box). It opens Ask with the question asked.
+     Pages can suggest a question by filling the ask_default block. #}
+  {% if here != 'ask' %}
+  <form class="ask-dock" action="{{ url_for('ask') }}" method="get" role="search" data-ask-dock>
+    <span class="ai-tag">{{ ai_mark() }}</span>
+    <input name="q" autocomplete="off" maxlength="500"
+           placeholder="{% block ask_hint %}Ask AI about your health data{% endblock %}"
+           data-default="{% block ask_default %}Which measurements have changed recently?{% endblock %}"
+           aria-label="Ask AI a question">
+    <button type="submit" aria-label="Ask">↑</button>
+  </form>
+  {% endif %}
+  <nav class="tabs" aria-label="Sections">
+    <a href="{{ url_for('today') }}" class="{{ 'on' if here in ('today', 'metric_page') }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h4l2-5 3 10 3-8 2 3h6"/></svg>Today{% if here in ('today', 'metric_page') %}<i class="tab-indicator"></i>{% endif %}</a>
+    <a href="{{ url_for('patterns') }}" class="{{ 'on' if here == 'patterns' }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M5 16l4-5 4 3 6-8"/></svg>Patterns{% if here == 'patterns' %}<i class="tab-indicator"></i>{% endif %}</a>
+    <a href="{{ url_for('ask') }}" class="{{ 'on' if here == 'ask' }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Ask{% if here == 'ask' %}<i class="tab-indicator"></i>{% endif %}</a>
+    <a href="{{ url_for('settings_page') }}" class="{{ 'on' if here == 'settings_page' }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Settings{% if here == 'settings_page' %}<i class="tab-indicator"></i>{% endif %}</a>
+  </nav>
+  {% endif %}
+</body>
+</html>

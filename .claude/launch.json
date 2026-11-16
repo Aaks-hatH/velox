@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vitalsense-web",
+      "runtimeExecutable": "/Users/chris/Desktop/Project-Healthtracker/python-app/.venv/bin/python",
+      "runtimeArgs": ["/Users/chris/Desktop/Project-Healthtracker/python-app/app.py"],
+      "port": 5050
+    }
+  ]
+}

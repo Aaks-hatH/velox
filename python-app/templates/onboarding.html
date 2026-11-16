@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Welcome · Velox Health{% endblock %}
+{% block body_class %}onboarding{% endblock %}
+
+{% block content %}
+{# Four steps on one page: Get started → Sign up → About you → Agree and proceed.
+   app.js shows one at a time; without JavaScript they simply stack.
+   "Skip to the app" jumps past sign-up, About you and the agreement, for showing the idea quickly. #}
+<form method="post" class="steps" id="steps" novalidate>
+  <div class="dots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  {# 1. Introduction #}
+  <section class="step intro" data-step="intro">
+    {# Each letter is its own <span> so the title can appear letter by letter (see .intro in style.css). #}
+    <h1 class="title-xl" aria-label="Velox Health">
+      {%- for letter in "Velox Health" -%}<span style="--i: {{ loop.index0 }}" aria-hidden="true">{{ letter }}</span>{%- endfor -%}
+    </h1>
+    <p class="lead">A quiet record of your heart, sleep and movement, read from Apple Health and compared only with you.</p>
+    <ul class="features">
+      <li><b>See your trends</b><span>Weekly, monthly and 3-month charts of the measurements you choose.</span></li>
+      <li><b>Compared only with you</b><span>Learns your usual range and points out changes that stand out from it.</span></li>
+      <li><b>AI that knows the context</b><span>Your height, weight and age help the assistant explain what your data means for you.</span></li>
+    </ul>
+    <button type="button" class="button next">Get started</button>
+  </section>
+
+  {# 2. Sign up: for showing the idea only. Email and password have no `name`, so they are never sent or saved. #}
+  <section class="step" data-step="signup">
+    <div class="step-top"><p class="eyebrow">Step 1 of 3</p>
+      <button type="submit" name="skip" value="yes" class="skip" formnovalidate>Skip to the app ›</button></div>
+    <h1>Create your account</h1>
+    <p class="lead">Keep your settings safe and pick up where you left off on any device.</p>
+
+    <div class="panel fields">
+      <label class="field"><span>First name</span>
+        <input type="text" name="name" value="{{ choices.name }}" maxlength="40" autocomplete="given-name" placeholder="Your first name"></label>
+      <label class="field"><span>Email</span>
+        <input type="email" autocomplete="off" placeholder="you@example.com"></label>
+      <label class="field"><span>Password</span>
+        <input type="password" autocomplete="off" placeholder="At least 8 characters"></label>
+    </div>
+    <p class="muted small demo-note">Sign-up is shown here to represent the idea. Accounts aren't set up in this version,
+      so your email and password are never sent or saved. Only your first name is kept, for the greeting.</p>
+
+    <button type="button" class="button next">Create account</button>
+    <button type="button" class="button secondary next apple"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.4 2-3.5 2-3.6-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.9-.8-3-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.2.8 1.1 1.7 2.3 2.9 2.3 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-.9-2.5-3.7zM14.1 5.6c.6-.8 1.1-1.8 1-2.9-.9 0-2.1.6-2.7 1.4-.6.7-1.1 1.8-1 2.8 1 .1 2.1-.5 2.7-1.3z"/></svg>Continue with Apple</button>
+  </section>
+
+  {# 3. About you #}
+  <section class="step" data-step="profile">
+    <div class="step-top"><p class="eyebrow">Step 2 of 3</p>
+      <button type="submit" name="skip" value="yes" class="skip" formnovalidate>Skip to the app ›</button></div>
+    <h1>About you</h1>
+    <p class="lead">The AI assistant compares these with your Apple Health data, so its suggestions and alerts fit you.</p>
+
+    <div class="panel fields">
+      <div class="field-pair">
+        <label class="field"><span>Height</span>
+          <span class="with-unit"><input type="number" name="height_cm" inputmode="decimal" min="50" max="250" step="0.1" required
+            value="{{ profile.height_cm if profile.height_cm }}" placeholder="175"><i>cm</i></span></label>
+        <label class="field"><span>Weight</span>
+          <span class="with-unit"><input type="number" name="weight_kg" inputmode="decimal" min="20" max="350" step="0.1" required
+            value="{{ profile.weight_kg if profile.weight_kg }}" placeholder="70"><i>kg</i></span></label>
+      </div>
+
+      <fieldset class="field">
+        <legend>Sex at birth</legend>
+        <div class="chips">
+          {% for key, label in sexes.items() %}
+            <label class="chip"><input type="radio" name="sex" value="{{ key }}" required {{ "checked" if profile.sex == key }}><span>{{ label }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <label class="field"><span>Date of birth</span>
+        <input type="date" name="birth_date" required value="{{ profile.birth_date }}" max="{{ today_iso }}"></label>
+
+      <fieldset class="field">
+        <legend>How active are you? <span class="muted">(optional)</span></legend>
+        <div class="chips">
+          {% for key, label in activity.items() %}
+            <label class="chip"><input type="radio" name="activity" value="{{ key }}" {{ "checked" if profile.activity == key }}><span>{{ label }}</span></label>
+          {% endfor %}
+        </div>
+      </fieldset>
+    </div>
+    {% if profile_errors %}<div class="notice" data-error-step>{% for p in profile_errors %}<p>{{ p }}</p>{% endfor %}</div>{% endif %}
+    <p class="muted small demo-note">Kept only on this computer. The cloud AI sees your age (not your birth date), sex at birth,
+      height, weight and activity level, and only if you switch it on in Settings.</p>
+
+    <button type="button" class="button next" data-validate>Continue</button>
+  </section>
+
+  {# 4. Agree and proceed #}
+  <section class="step" data-step="agree">
+    <div class="step-top"><p class="eyebrow">Step 3 of 3</p>
+      <button type="submit" name="skip" value="yes" class="skip" formnovalidate>Skip to the app ›</button></div>
+    <h1>What Velox Health is, and isn't</h1>
+    <p class="lead">Please read this carefully before you start.</p>
+
+    {# Written to be read like a short agreement. The checkbox below unlocks the button. #}
+    <div class="panel terms">
+      <h3>Before you use Velox Health</h3>
+      <p>Velox Health is <b>not a medical device</b>. It does not diagnose, treat, cure, prevent, or predict
+        any illness or condition. It shows statistical comparisons between your recent measurements
+        and your own history, nothing more.</p>
+      <p><b>It can't replace your doctor.</b> Only a qualified healthcare professional can examine you,
+        understand your full medical history, and tell you what your health data means.</p>
+      <p><b>Don't depend on this app alone.</b> Use it as one source of information alongside regular
+        check-ups and professional advice, never instead of them.</p>
+      <p><b>It can be wrong or miss things.</b> Watch sensors record only some of the time and can be
+        affected by fit, movement, and temperature. Days can be missing. No alert never means
+        everything is fine, and an alert doesn't mean something is wrong.</p>
+      <p><b>Suggestions and alerts are general.</b> Recommendations, alerts and warnings use your profile and
+        your own history, but they are general information, not medical advice made for you.</p>
+      <p><b>Don't change any treatment because of it.</b> Never start, stop, or change a medicine,
+        diet, or treatment based on Velox Health. Talk to your doctor or pharmacist first.</p>
+      <p><b>Don't wait because of it.</b> If you feel unwell or something worries you, contact a
+        healthcare professional, even if Velox Health shows nothing unusual.</p>
+      <p><b>Assistant answers have limits.</b> The assistant, including the optional cloud AI, can make
+        mistakes. Its answers are general information, not medical advice.</p>
+      <p class="emergency"><b>In an emergency</b>, such as chest pain, trouble breathing, or fainting,
+        call your local emergency number straight away. Don't use Velox Health.</p>
+    </div>
+
+    <label class="agree">
+      <input type="checkbox" name="agree" id="agree" value="yes">
+      <span>I have read and understood this. I agree that Velox Health is not medical advice and doesn't
+        replace my doctor.</span>
+    </label>
+    {% if agree_error %}<p class="notice" data-error-step>Please tick "I agree" to continue.</p>{% endif %}
+    <button type="submit" class="button" data-requires="agree">Agree and proceed</button>
+  </section>
+</form>
+{% endblock %}

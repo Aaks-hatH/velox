@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% from "_parts.html" import icon, status, demo_badge, ai_mark %}
+{% block title %}Today · Velox Health{% endblock %}
+
+{% block content %}
+<header class="today-head">
+  <div class="row between baseline">
+    <span class="muted">{{ now.strftime("%A %-d %B") }}</span>
+    {{ demo_badge(snapshot) }}
+  </div>
+  <h1>{{ greeting }}</h1>
+  {% if snapshot %}<p class="muted small">Updated {{ snapshot.generated_at.strftime("%-I:%M %p").lower() }}</p>{% endif %}
+</header>
+
+{% if not snapshot %}
+  <section class="panel empty">
+    <h2>No data yet</h2>
+    <p class="muted">Upload your Apple Health export, or turn on Demo Mode, in Settings.</p>
+    <a class="button" href="{{ url_for('settings_page') }}">Open Settings</a>
+  </section>
+{% else %}
+  {% set findings = snapshot.findings %}
+  <a class="week-note {{ 'calm' if not findings }}" href="{{ url_for('patterns') }}">
+    {% if not findings %}
+      <h2>A steady week</h2>
+      <p class="muted">Your last 7 days look like your previous 4 weeks, or there isn't enough data yet to tell.</p>
+      <span class="link">See every measurement</span>
+    {% else %}
+      <h2>{{ ["One change", "Two changes", "Three changes", "Four changes"][findings|length - 1] if findings|length <= 4 else (findings|length ~ " changes") }} worth a look</h2>
+      {% for f in findings %}
+        <div class="row between finding-line">
+          <span><span class="flag-text">{{ "↗" if f.direction == "up" else "↘" }}</span> {{ f.headline }}</span>
+          <b class="serif flag-text">{{ fmt_change(f.metric, f.change) }}</b>
+        </div>
+      {% endfor %}
+      <span class="link">See the evidence</span>
+    {% endif %}
+  </a>
+
+  {#
+    The measurement "solar system". The sun in the middle is you: it beats at your resting
+    heart rate. Each measurement is a planet tied to the sun by a thread. app.js draws the
+    sun and threads on the canvas and moves the planets around their orbit.
+    Without JavaScript the planets still sit in a ring (CSS --angle) and are normal links.
+  #}
+  <section class="system-section">
+    <div class="row between baseline section-head">
+      <h2>Measurements</h2>
+      <span class="muted small">Tap a planet</span>
+    </div>
+    <div class="system" data-system data-bpm="{{ resting_bpm or 60 }}">
+      <canvas class="system-canvas" aria-hidden="true"></canvas>
+      <div class="sun-core">
+        {% if resting_bpm %}
+          <b class="serif" data-pulse data-count="{{ resting_bpm }}">{{ resting_bpm }}</b>
+          <small>bpm resting</small>
+        {% else %}
+          <small>You</small>
+        {% endif %}
+      </div>
+      {% for row in rows %}
+        {% set a = row.assessment %}
+        <a class="planet {{ 'flagged' if a.outcome == 'unusual' }} {{ 'faint' if a.outcome == 'insufficient' }}"
+           href="{{ url_for('metric_page', metric_id=row.metric.id) }}"
+           style="--c: {{ row.metric.color }}; --angle: {{ (loop.index0 / rows|length * 360) | round(2) }}deg"
+           data-planet data-color="{{ row.metric.color }}"
+           aria-label="{{ row.metric.title }}: {{ fmt(row.metric, row.latest.value) if row.latest else 'no data' }}, {{ status_text(a) }}">
+          <span class="planet-body">{{ icon(row.metric, 44, morph=True) }}</span>
+          <span class="planet-label">{{ row.metric.short_title }}</span>
+          <span class="planet-value serif" style="view-transition-name: value-{{ row.metric.id }}">
+            {{- fmt(row.metric, row.latest.value) if row.latest else "No data" -}}</span>
+        </a>
+      {% endfor %}
+    </div>
+    <p class="muted small legend-line"><span><i class="dot flagdot"></i> Gold: changed this week</span><span><i class="dot hollow"></i> Faded: needs more data</span></p>
+  </section>
+
+  {# AI overview: the assistant's summary of the week. Tapping it opens Ask with the question asked. #}
+  {% if overview %}
+  <a class="panel ai-overview" href="{{ url_for('ask', q='Which measurements have changed recently?') }}">
+    <div class="row between baseline">
+      <span class="ai-tag">{{ ai_mark() }} AI overview</span>
+      <span class="pill">On-device</span>
+    </div>
+    <h3>{{ overview.title }}</h3>
+    <ul class="ai-points">
+      {% for fact in overview.facts[:3] %}<li>{{ fact }}</li>{% endfor %}
+    </ul>
+    {% if overview.interpretations %}<p class="muted small">{{ overview.interpretations[0] }}</p>{% endif %}
+    <span class="link">Ask AI about this</span>
+  </a>
+  {% endif %}
+{% endif %}
+
+<p class="footnote">Velox Health shows statistical observations about your own data. It does not diagnose medical conditions.</p>
+{% endblock %}

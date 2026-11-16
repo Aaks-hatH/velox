@@ -1,0 +1,673 @@
+/*
+  Velox Health look: dark glass over a living background of flowing red light
+  (drawn by app.js on .flow-bg). Panels are smoky, frosted glass so the light
+  shows through softly. Serif numbers, and one saffron colour kept only for
+  changes worth a look.
+*/
+
+:root {
+  color-scheme: dark;
+  --paper: #000000;
+  --surface: rgb(14 8 9 / 0.62);        /* smoky frosted glass */
+  --ink: #F5EEEE;
+  --muted: #B2A3A3;
+  --hairline: rgb(255 255 255 / 0.11);
+  --reef: #7FE0C4;
+  --flag: #F4BC4E;
+  --usual: #8FD3AC;
+  --pulse: #FF6F7D;
+  --thread: #FFFFFF;
+  --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", sans-serif;
+  --radius: 14px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.3, 1.35, 0.5, 1);
+  /* The whole app is one iPhone-wide column (iPhone Pro Max width). On a bigger screen the
+     space either side stays black; --edge is that space, used by everything pinned to the screen. */
+  --phone: 430px;
+  --edge: max(0px, calc((100vw - var(--phone)) / 2));
+}
+
+/* On a computer, faint lines mark the phone's edges. */
+@media (min-width: 470px) {
+  body::after { content: ""; position: fixed; top: 0; bottom: 0; left: var(--edge); right: var(--edge);
+    border-left: 1px solid rgb(255 255 255 / 0.08); border-right: 1px solid rgb(255 255 255 / 0.08);
+    pointer-events: none; z-index: 60; }
+}
+
+/* ---------- Basics ---------- */
+
+* { box-sizing: border-box; }
+
+html { background: #000; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: transparent;   /* the flowing light canvas sits behind everything */
+  color: var(--ink);
+  font: 16px/1.45 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The animated background: fixed behind the page, never catches taps. */
+.flow-bg { position: fixed; top: 0; left: var(--edge); width: min(100vw, var(--phone)); height: 100vh; z-index: -1; pointer-events: none; display: block; }
+
+.page {
+  max-width: var(--phone);
+  margin: 0 auto;
+  padding: 16px 20px 110px;   /* room for the tab bar */
+}
+
+h1, h2, h3, .serif { font-family: var(--serif); font-weight: 600; }
+h1 { font-size: 34px; line-height: 1.1; margin: 4px 0; }
+h2 { font-size: 20px; margin: 0; }
+h3 { font-size: 17px; margin: 0 0 8px; }
+p { margin: 6px 0; }
+a { color: inherit; text-decoration: none; }
+
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.footnote { color: var(--muted); font-size: 13px; margin-top: 26px; }
+.link { color: var(--reef); font-weight: 600; font-size: 15px; }
+.flag-text { color: var(--flag); }
+.usual-text { color: var(--usual); }
+.right { text-align: right; }
+
+.row { display: flex; align-items: center; gap: 10px; }
+.between { justify-content: space-between; }
+.baseline { align-items: baseline; }
+.grow { flex: 1; min-width: 0; }
+
+.panel {
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 0.75px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 12px 0;
+}
+
+.section-head { margin: 26px 0 10px; }
+.page-head { margin-bottom: 4px; }
+
+.pill {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: 99px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+
+/* "Demo data" looks like a dashed rubber stamp. */
+.demo-badge {
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px dashed color-mix(in srgb, var(--ink) 60%, transparent);
+  border-radius: 99px;
+  padding: 3px 9px;
+}
+
+/* ---------- Buttons and forms ---------- */
+
+.button {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 15px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 600 16px var(--sans);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.button:active { transform: scale(0.98); opacity: 0.9; }
+.button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--hairline); }
+.button.danger { background: transparent; color: var(--pulse); border: 1px solid var(--hairline); }
+
+:focus-visible { outline: 2px solid var(--reef); outline-offset: 2px; }
+
+.switch-row { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.switch {
+  appearance: none;
+  width: 46px; height: 28px;
+  border-radius: 99px;
+  background: var(--hairline);
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.switch::after {
+  content: "";
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.switch:checked { background: var(--reef); }
+.switch:checked::after { transform: translateX(18px); }
+
+.notice { background: color-mix(in srgb, var(--flag) 14%, transparent); border-radius: 10px; padding: 10px 14px; }
+.notice.calm { background: color-mix(in srgb, var(--usual) 14%, transparent); }
+.upload input[type=file] { width: 100%; margin-top: 8px; color: var(--muted); }
+
+/* ---------- Tab bar ---------- */
+
+.tabs {
+  position: fixed; left: var(--edge); right: var(--edge); bottom: 0;
+  display: flex; justify-content: center; gap: 4px;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 0.75px solid var(--hairline);
+}
+.tabs a {
+  flex: 0 1 110px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  font-size: 11px; font-weight: 500;
+  color: var(--muted);
+  transition: color 0.2s ease;
+}
+.tabs a.on { color: var(--ink); }
+.tabs svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- Icons, status ---------- */
+
+.icon {
+  display: inline-grid; place-items: center; flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+}
+.status { display: block; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status.flag { color: var(--flag); font-weight: 500; }
+.dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; vertical-align: middle; margin-right: 2px; }
+.dot.hollow { background: none; border: 1px dotted currentColor; width: 6px; height: 6px; }
+
+/* ---------- Today ---------- */
+
+.today-head { margin-bottom: 18px; }
+.big-num { font-size: 24px; display: inline-block; }
+/* app.js adds .beat to [data-pulse] elements on every heartbeat. */
+.beat { animation: thump 0.42s cubic-bezier(0.2, 1.6, 0.4, 1); }
+@keyframes thump { 30% { transform: scale(1.14); color: var(--pulse); } }
+
+
+.week-note {
+  display: block;
+  border-left: 3px solid var(--flag);
+  padding: 2px 0 2px 14px;
+  margin: 8px 0 6px;
+  transition: opacity 0.15s ease;
+}
+.week-note.calm { border-color: var(--usual); }
+.week-note:active { opacity: 0.7; }
+.week-note h2 { margin-bottom: 8px; }
+.finding-line { font-size: 15px; margin: 4px 0; align-items: flex-start; }
+.finding-line b { white-space: nowrap; }
+.nowrap { white-space: nowrap; }
+.week-note .link { display: inline-block; margin-top: 8px; }
+
+.ledger { padding: 0; }
+.ledger-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px;
+  border-top: 0.75px solid var(--hairline);
+  transition: background 0.15s ease;
+}
+.ledger-row:first-child { border-top: 0; }
+a.ledger-row:hover { background: color-mix(in srgb, var(--hairline) 35%, transparent); }
+a.ledger-row:active { background: color-mix(in srgb, var(--hairline) 60%, transparent); }
+.ledger-row b { font-size: 15px; }
+.ledger-row .value { min-width: 62px; white-space: nowrap; text-align: right; display: flex; flex-direction: column; }
+.ledger-row .value b { font-size: 20px; line-height: 1.1; }
+.ledger-row .value small { color: var(--muted); font-size: 11px; }
+
+/* Sparklines draw themselves left to right, one after another (the "pen recorder"). */
+.spark path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 0.5s cubic-bezier(0.65, 0, 0.35, 1) forwards; animation-delay: var(--delay, 0s); }
+.spark circle { opacity: 0; animation: appear 0.2s ease forwards; animation-delay: calc(var(--delay, 0s) + 0.45s); }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes appear { to { opacity: 1; } }
+
+/* ---------- Today: the measurement solar system ---------- */
+/* The sun, threads and light particles are drawn by app.js on .system-canvas.
+   Planets are ordinary links placed on an elliptical orbit around the sun. */
+
+.system { position: relative; width: 100%; aspect-ratio: 1 / 1.14; margin: 0 0 4px; }
+.system-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.sun-core {
+  position: absolute; left: 50%; top: 50%; z-index: 2;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column; align-items: center;
+  pointer-events: none; text-align: center;
+}
+.sun-core b { font-size: 26px; line-height: 1; display: inline-block; color: var(--ink); }
+/* A soft dark disc so the number reads over the glowing background. */
+.sun-core::before {
+  content: ""; position: absolute; left: 50%; top: 50%; z-index: -1;
+  width: 64px; height: 64px; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle, rgb(0 0 0 / 0.75) 0%, rgb(0 0 0 / 0.5) 55%, transparent 72%);
+}
+.sun-core small { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+.planet {
+  position: absolute; left: 50%; top: 50%; z-index: 3;
+  width: 86px; margin: -22px 0 0 -43px;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  text-align: center;
+  /* Without JavaScript: a plain ring. app.js replaces this transform every frame. */
+  transform: rotate(var(--angle)) translateY(-40%) rotate(calc(-1 * var(--angle)));
+  -webkit-tap-highlight-color: transparent;
+}
+.planet-body { position: relative; display: inline-grid; border-radius: 50%; transition: transform 0.35s var(--spring); }
+.planet .icon {
+  /* A small glowing sphere, lit from the top left. */
+  background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--c) 40%, #fff) 0%, var(--c) 48%, color-mix(in srgb, var(--c) 40%, #000) 100%);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14), 0 0 20px color-mix(in srgb, var(--c) 45%, transparent),
+              0 0 calc(var(--charge, 0) * 70px) calc(var(--charge, 0) * 14px) var(--c);
+  color: #fff;
+}
+.planet-label { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.1; }
+.planet-value { font-size: 13px; line-height: 1.15; white-space: nowrap; }
+.planet:hover .planet-body, .planet:focus-visible .planet-body { transform: scale(1.12); }
+.planet:active .planet-body { transform: scale(0.94); }
+
+/* Changed this week: a saffron halo that breathes. */
+.planet.flagged .icon { box-shadow: 0 0 0 2px var(--flag), 0 0 24px color-mix(in srgb, var(--flag) 55%, transparent); animation: halo 2.6s ease-in-out infinite; }
+.planet.flagged .planet-label { color: var(--flag); }
+@keyframes halo { 50% { box-shadow: 0 0 0 2px var(--flag), 0 0 42px color-mix(in srgb, var(--flag) 85%, transparent); } }
+.planet.faint { opacity: 0.55; }
+
+/* Charging: energy is pouring in through the threads; app.js raises --charge from 0 to 1. */
+.planet.charging .icon { animation: none; }
+.planet.charging .planet-body { transform: scale(calc(1 + var(--charge, 0) * 0.3)); transition: none; }
+
+/* Burst: the planet flashes and sends out ripples. */
+.planet.pinged .icon { animation: flash 0.55s ease-out; }
+.planet.pinged .planet-body::before, .planet.pinged .planet-body::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid var(--c); animation: ripple 0.7s ease-out both;
+}
+.planet.pinged .planet-body::after { animation-delay: 0.14s; }
+@keyframes flash { 30% { background: var(--c); color: #fff; transform: scale(1.18); box-shadow: 0 0 60px var(--c); } }
+@keyframes ripple { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2.6); opacity: 0; } }
+
+.legend-line { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.dot.flagdot { background: var(--flag); width: 6px; height: 6px; }
+
+/* ---------- "Ask AI" bar on every page ---------- */
+
+.ask-dock {
+  position: fixed; left: calc(var(--edge) + 16px); right: calc(var(--edge) + 16px); z-index: 20;
+  bottom: calc(66px + env(safe-area-inset-bottom));
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 6px 6px 14px;
+  background: rgb(18 10 12 / 0.72);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgb(255 110 130 / 0.28); border-radius: 99px;
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.45), 0 0 24px rgb(255 60 90 / 0.12);
+  animation: rise 0.4s var(--ease-out) 0.25s both;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.ask-dock:focus-within { border-color: rgb(255 110 130 / 0.7); box-shadow: 0 8px 30px rgb(0 0 0 / 0.5), 0 0 34px rgb(255 60 90 / 0.3); }
+.ask-dock input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); font: 15px var(--sans); padding: 6px 0; }
+.ask-dock input::placeholder { color: var(--muted); }
+.ask-dock button {
+  width: 34px; height: 34px; flex-shrink: 0; border: 0; border-radius: 50%;
+  background: var(--pulse); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.ask-dock button:active { transform: scale(0.9); }
+.page { padding-bottom: 150px; }
+
+/* ---------- AI overview (under the solar system) ---------- */
+
+.ai-overview { display: block; position: relative; overflow: hidden; margin-top: 18px; }
+/* A slow sheen sweeps across the card, so it reads as something live you can open. */
+.ai-overview::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.07) 50%, transparent 65%);
+  transform: translateX(-100%); animation: sheen 4.5s ease-in-out 1.2s infinite;
+}
+@keyframes sheen { 60%, 100% { transform: translateX(100%); } }
+.ai-overview h3 { margin: 10px 0 6px; }
+.ai-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--pulse); }
+.ai-mark { fill: currentColor; }
+.ai-points { margin: 0 0 8px; padding-left: 18px; font-size: 14px; color: var(--ink); }
+.ai-points li { margin: 4px 0; }
+.ai-overview .link { display: inline-block; margin-top: 4px; }
+
+/* ---------- The colour wipe between a planet and its page ---------- */
+/* Leaving Today: the planet's colour floods out from it. Arriving: the colour slides away
+   like a liquid curtain while the page slides in, like the next slide of a slideshow. */
+
+.warp {
+  position: fixed; top: 0; bottom: 0; left: var(--edge); right: var(--edge); z-index: 50; pointer-events: none;
+  background: var(--warp-color, #fff);
+  clip-path: circle(0 at var(--wx, 50%) var(--wy, 50%));
+  visibility: hidden;
+}
+.warp.go { visibility: visible; clip-path: circle(150vmax at var(--wx, 50%) var(--wy, 50%)); transition: clip-path 0.62s cubic-bezier(0.7, 0, 0.25, 1); }
+.from-planet .warp { visibility: visible; clip-path: none; animation: warp-away 0.5s cubic-bezier(0.75, 0, 0.2, 1) 0.04s forwards; }
+@keyframes warp-away {
+  0%   { transform: translateX(0); border-radius: 0; }
+  55%  { border-radius: 0 45% 45% 0 / 0 50% 50% 0; }
+  100% { transform: translateX(-112%); border-radius: 0 70% 70% 0 / 0 50% 50% 0; }
+}
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(70px); } }
+.from-planet .page > *, .from-planet .page > .metric-head { animation: slide-in-right 0.42s var(--ease-out) both; }
+.from-planet .page > :nth-child(1) { animation-delay: 0.16s; }
+.from-planet .page > :nth-child(2) { animation-delay: 0.19s; }
+.from-planet .page > :nth-child(3) { animation-delay: 0.22s; }
+.from-planet .page > :nth-child(4) { animation-delay: 0.25s; }
+.from-planet .page > :nth-child(5) { animation-delay: 0.28s; }
+.from-planet .page > :nth-child(n+6) { animation-delay: 0.32s; }
+
+/* ---------- Metric page ---------- */
+
+.back { display: inline-block; color: var(--reef); font-weight: 600; margin-bottom: 8px; }
+.hero-value { display: flex; align-items: baseline; gap: 6px; margin: 4px 0; }
+.hero-value .serif { font-size: 54px; font-weight: 500; line-height: 1.05; }
+.hero-value .unit { font-size: 20px; font-weight: 400; color: var(--muted); }
+
+.segments { display: flex; background: color-mix(in srgb, var(--hairline) 55%, transparent); border-radius: 9px; padding: 2px; margin-bottom: 12px; }
+.segments a { flex: 1; text-align: center; padding: 6px; border-radius: 7px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.segments a.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+
+.chart-caption { font-size: 14px; margin-bottom: 4px; min-height: 22px; }
+.chart-wrap { position: relative; touch-action: pan-y; }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart .grid { stroke: var(--hairline); stroke-width: 0.6; }
+.chart .axis { fill: var(--muted); font: 10px var(--sans); }
+.chart .band { opacity: 0.13; }
+.chart .usual { stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.55; }
+.chart .cursor { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+.chart .line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+.chart .dot { opacity: 0; animation: appear 0.25s ease forwards 0.55s; }
+.chart .bar { transform-box: fill-box; transform-origin: bottom; animation: grow 0.4s cubic-bezier(0.3, 1.2, 0.5, 1) both; }
+@keyframes grow { from { transform: scaleY(0); } }
+.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; opacity: 0.3; margin-right: 6px; vertical-align: middle; }
+
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tiles .panel { margin: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px; }
+.tiles b { font-size: 20px; }
+
+.night { font-size: 15px; padding: 4px 0; }
+.meter { height: 6px; border-radius: 99px; background: var(--hairline); overflow: hidden; margin: 8px 0; }
+.meter span { display: block; height: 100%; border-radius: 99px; transform-origin: left; animation: fill 0.55s cubic-bezier(0.65, 0, 0.35, 1) both; }
+.meter .good { background: var(--usual); }
+.meter .warn { background: var(--flag); }
+.meter .low { background: var(--pulse); }
+@keyframes fill { from { transform: scaleX(0); } }
+
+/* ---------- Lists (evidence, limitations, answers) ---------- */
+
+.bullets { margin-top: 12px; }
+.bullets h4 { margin: 0 0 6px; font-size: 14px; }
+.bullets ul { list-style: none; margin: 0; padding: 0; }
+.bullets li { position: relative; padding-left: 18px; margin: 6px 0; font-size: 15px; }
+.bullets li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 8px; height: 1.5px; border-radius: 2px; background: currentColor; opacity: 0.6; }
+.bullets.reef h4, .bullets.reef li::before { color: var(--reef); }
+.bullets.muted h4, .bullets.muted li::before { color: var(--muted); }
+.bullets.flag li::before { color: var(--flag); }
+
+/* ---------- Patterns ---------- */
+
+details summary { list-style: none; cursor: pointer; }
+details summary::-webkit-details-marker { display: none; }
+.finding { position: relative; }
+.finding::before { content: ""; position: absolute; left: 0; top: 16px; bottom: 16px; width: 3px; border-radius: 3px; background: var(--flag); }
+.finding .compare { margin: 14px 0 8px; align-items: flex-end; }
+.finding .compare > span:not(.muted):not(.grow) { display: flex; flex-direction: column; }
+.finding .compare b { font-size: 20px; }
+.finding .toggle::after { content: " ⌄"; }
+.finding[open] .toggle { display: none; }
+.finding .more { animation: unfold 0.35s ease both; }
+@keyframes unfold { from { opacity: 0; transform: translateY(-6px); } }
+.calm-panel { border-left: 3px solid var(--usual); }
+
+/* ---------- Ask ---------- */
+
+.chat { display: flex; flex-direction: column; gap: 12px; margin: 14px 0; }
+.bubble-user {
+  align-self: flex-end; max-width: 80%;
+  background: var(--ink); color: var(--paper);
+  padding: 10px 14px;
+  border-radius: 16px 16px 4px 16px;
+  animation: rise 0.35s cubic-bezier(0.3, 1.3, 0.5, 1) both;
+}
+.answer { margin: 0 24px 0 0; animation: rise 0.3s cubic-bezier(0.3, 1.2, 0.5, 1) both; }
+.answer .safety { color: var(--pulse); background: color-mix(in srgb, var(--pulse) 9%, transparent); border-radius: 10px; padding: 10px 12px; font-size: 15px; }
+.answer .source { margin-top: 10px; }
+.answer .notice-text { margin: 6px 0 0; color: var(--ink); line-height: 1.5; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+
+.typing { display: inline-flex; gap: 5px; padding: 14px 16px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: bob 0.9s ease-in-out infinite; }
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bob { 0%, 100% { opacity: 0.3; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-2px); } }
+
+.suggestions h3 { font-size: 15px; font-weight: 600; margin: 18px 0 8px; }
+.suggestion {
+  display: flex; justify-content: space-between; width: 100%;
+  margin: 8px 0; padding: 11px 14px;
+  background: var(--surface); color: var(--ink);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--hairline); border-radius: 12px;
+  font: 15px var(--sans); text-align: left; cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.suggestion:hover { background: var(--surface); }
+.suggestion:active { transform: scale(0.98); }
+.suggestion span { color: var(--reef); font-weight: 700; }
+
+.ask-bar {
+  position: fixed; left: var(--edge); right: var(--edge); bottom: 64px;
+  display: flex; gap: 10px;
+  padding: 10px 20px;
+  background: var(--paper);
+  border-top: 0.75px solid var(--hairline);
+}
+.ask-bar input {
+  flex: 1; padding: 11px 14px;
+  font: 16px var(--sans); color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline); border-radius: 12px;
+}
+.ask-bar button {
+  width: 42px; height: 42px; border: 0; border-radius: 50%;
+  background: var(--ink); color: var(--paper);
+  font-size: 18px; font-weight: 700; cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.ask-bar button:disabled { background: var(--hairline); }
+.ask-bar button:active { transform: scale(0.92); }
+.ask-page .page { padding-bottom: 170px; }
+
+/* ---------- Onboarding ---------- */
+
+.dots { display: flex; justify-content: center; gap: 6px; margin: 4px 0 18px; }
+.dots i { width: 7px; height: 7px; border-radius: 99px; background: var(--hairline); transition: width 0.3s ease, background 0.3s ease; }
+.dots i.on { width: 22px; background: var(--ink); }
+.title-xl { font-size: 48px; font-weight: 500; margin-top: 30px; }
+.lead { font-family: var(--serif); font-size: 19px; color: var(--muted); }
+.features { list-style: none; padding: 0; margin: 22px 0; }
+.features li { margin: 16px 0; display: flex; flex-direction: column; }
+.features span { color: var(--muted); font-size: 15px; }
+.choice { display: flex; gap: 12px; align-items: flex-start; padding: 14px; margin: 10px 0; border: 1px solid var(--hairline); border-radius: 12px; cursor: pointer; background: var(--surface); }
+.choice:has(input:checked) { border-color: var(--ink); }
+.choice input { accent-color: var(--reef); margin-top: 4px; }
+
+/* The agreement step: reads like a short document, then a tick box. */
+.terms p { font-size: 15px; margin: 0 0 12px; }
+.terms p b { color: var(--ink); }
+.terms p:not(.emergency) { color: var(--muted); }
+.terms .emergency b { color: inherit; }
+.terms .emergency { color: var(--pulse); margin: 0; padding-top: 12px; border-top: 0.75px solid var(--hairline); }
+.agree { display: flex; gap: 12px; align-items: flex-start; margin: 18px 0 4px; font-size: 15px; cursor: pointer; }
+.agree input { width: 22px; height: 22px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--reef); cursor: pointer; }
+.button:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+/* The new steps: sign-up and "About you" fields. */
+.eyebrow { margin: 8px 0 0; font: 600 12px var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.fields { display: grid; gap: 16px; }
+.field { display: grid; gap: 7px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.field > span:first-child, .field legend { font-size: 13px; font-weight: 600; color: var(--muted); padding: 0; margin-bottom: 7px; }
+.field input[type="text"], .field input[type="email"], .field input[type="password"],
+.field input[type="number"], .field input[type="date"], .field select {
+  width: 100%; min-width: 0; font: 17px var(--sans); color: var(--ink); color-scheme: dark;
+  background: rgb(255 255 255 / 0.04); border: 1px solid var(--hairline); border-radius: 11px;
+  padding: 12px 13px; outline: 0; transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.eyebrow + h1, .step-top + h1 { margin-top: 6px; }
+.step-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
+.step-top .eyebrow { margin: 0; }
+.skip { border: 0; background: none; padding: 6px 0; font: 600 14px var(--sans); color: var(--muted); cursor: pointer; transition: color 0.2s ease; }
+.skip:hover, .skip:focus-visible { color: var(--ink); }
+.field input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.field input[type="number"]::-webkit-inner-spin-button, .field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.with-unit { position: relative; display: block; }
+.with-unit input { padding-right: 42px !important; }
+.with-unit i { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--muted); font-size: 15px; pointer-events: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; cursor: pointer; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip span { display: inline-block; padding: 9px 14px; border-radius: 99px; border: 1px solid var(--hairline); font-size: 15px; color: var(--muted); transition: all 0.2s ease; }
+.demo-note { margin: 12px 2px 0; }
+.button.apple { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+.button.apple svg { width: 18px; height: 18px; fill: currentColor; }
+.notice p { margin: 2px 0; }
+
+/* Before you're in the app: plain black, with red as the only colour. */
+/* The small credit at the bottom of every page. */
+.watermark { margin: 26px 0 0; text-align: center; font: 500 11px var(--sans); letter-spacing: 0.04em; color: rgb(255 255 255 / 0.5); text-shadow: 0 1px 6px rgb(0 0 0 / 0.9); pointer-events: none; user-select: none; }
+.onboarding .watermark { position: fixed; left: var(--edge); right: var(--edge); bottom: calc(12px + env(safe-area-inset-bottom)); margin: 0; }
+.onboarding .page { padding-bottom: 64px; }
+
+.onboarding { --accent: #E5243B; --accent-soft: rgb(229 36 59 / 0.16); background: #000; }
+.onboarding .dots i.on { background: var(--accent); box-shadow: 0 0 10px rgb(229 36 59 / 0.7); }
+.onboarding .panel { background: #0B0B0B; backdrop-filter: none; border-color: rgb(229 36 59 / 0.22); }
+.onboarding .button { background: var(--accent); color: #fff; box-shadow: 0 8px 26px -10px rgb(229 36 59 / 0.9); }
+.onboarding .button.secondary { background: transparent; color: var(--ink); border: 1px solid rgb(255 255 255 / 0.18); box-shadow: none; }
+.onboarding .eyebrow { color: var(--accent); }
+.onboarding .title-xl { color: #fff; }
+.onboarding .features b { color: #fff; }
+.onboarding .features li { padding-left: 14px; border-left: 2px solid var(--accent); }
+.onboarding .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.onboarding .chip input:checked + span { background: var(--accent); border-color: var(--accent); color: #fff; }
+.onboarding .chip input:focus-visible + span { box-shadow: 0 0 0 3px var(--accent-soft); }
+.onboarding .agree input { accent-color: var(--accent); }
+.onboarding .terms p b { color: #fff; }
+.onboarding .notice { background: var(--accent-soft); }
+
+/* ============================================================
+   MOTION
+   One family of movements used everywhere: things rise into place
+   with a soft ease, one after another, so every screen "assembles".
+   ============================================================ */
+
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.9); } }
+@keyframes wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes letter { from { opacity: 0; transform: translateY(0.5em) rotate(8deg); filter: blur(12px); } }
+@keyframes step-out { to { opacity: 0; transform: translateX(-36px); filter: blur(4px); } }
+@keyframes step-in { from { opacity: 0; transform: translateX(36px); } }
+
+/* ---------- Every page: its blocks arrive one after another ---------- */
+
+.page > * { animation: rise 0.4s var(--ease-out) both; }
+.page > *:nth-child(2) { animation-delay: 0.035s; }
+.page > *:nth-child(3) { animation-delay: 0.07s; }
+.page > *:nth-child(4) { animation-delay: 0.105s; }
+.page > *:nth-child(5) { animation-delay: 0.14s; }
+.page > *:nth-child(6) { animation-delay: 0.175s; }
+.page > *:nth-child(7) { animation-delay: 0.21s; }
+.page > *:nth-child(n+8) { animation-delay: 0.245s; }
+
+/* Rows inside a list, tiles and suggestions cascade too. */
+.ledger > .ledger-row, .tiles > *, .suggestion { animation: rise 0.35s var(--ease-out) both; }
+.ledger > :nth-child(1), .tiles > :nth-child(1), .suggestion:nth-of-type(1) { animation-delay: 0.10s; }
+.ledger > :nth-child(2), .tiles > :nth-child(2), .suggestion:nth-of-type(2) { animation-delay: 0.13s; }
+.ledger > :nth-child(3), .tiles > :nth-child(3), .suggestion:nth-of-type(3) { animation-delay: 0.16s; }
+.ledger > :nth-child(4), .tiles > :nth-child(4), .suggestion:nth-of-type(4) { animation-delay: 0.19s; }
+.ledger > :nth-child(5), .suggestion:nth-of-type(5) { animation-delay: 0.22s; }
+.ledger > :nth-child(6), .suggestion:nth-of-type(6) { animation-delay: 0.25s; }
+.ledger > :nth-child(7) { animation-delay: 0.28s; }
+.ledger > :nth-child(n+8) { animation-delay: 0.31s; }
+
+/* The metric page's header stays still: its icon and number fly in from the Today list instead. */
+.page > .metric-head { animation: none; }
+
+/* Panels lift slightly under the pointer (desktop). */
+@media (hover: hover) {
+  .panel, .week-note { transition: transform 0.3s var(--ease-out), border-color 0.3s ease; }
+  a.panel:hover, details.panel:hover, .tiles .panel:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--ink) 18%, transparent); }
+  .week-note:hover { transform: translateX(3px); }
+}
+
+/* ---------- Moving between pages ---------- */
+/* Browsers that support it blend one page into the next instead of flashing white/black. */
+
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: 0.28s var(--ease-out) both page-out; }
+::view-transition-new(root) { animation: 0.32s var(--ease-out) both page-in; }
+@keyframes page-out { to { opacity: 0; transform: scale(0.97); filter: blur(6px); } }
+@keyframes page-in { from { opacity: 0; } }
+
+/* The tab bar stays put, and the little pill under the active tab glides to the new one. */
+.tabs { view-transition-name: tabs; }
+.tab-indicator { position: absolute; bottom: -6px; width: 18px; height: 3px; border-radius: 3px; background: var(--ink); view-transition-name: tab-indicator; }
+.tabs a { position: relative; }
+.tabs a.on svg { animation: pop 0.5s var(--spring) both; }
+::view-transition-group(tab-indicator) { animation-duration: 0.5s; animation-timing-function: var(--spring); }
+
+/* A measurement's icon and value fly from the Today list into the detail page (and back). */
+::view-transition-group(*) { animation-duration: 0.45s; animation-timing-function: var(--ease-out); }
+
+/* ---------- The intro (first welcome screen) ---------- */
+
+.js .onboarding .page > * { animation: none; }
+.intro .title-xl span { display: inline-block; white-space: pre; animation: letter 0.55s var(--ease-out) both; animation-delay: calc(0.08s + var(--i) * 0.035s); }
+.intro .lead { animation: rise 0.5s var(--ease-out) 0.4s both; }
+.intro .features li { animation: rise 0.45s var(--ease-out) both; }
+.intro .features li:nth-child(1) { animation-delay: 0.55s; }
+.intro .features li:nth-child(2) { animation-delay: 0.63s; }
+.intro .features li:nth-child(3) { animation-delay: 0.71s; }
+.intro .button { animation: pop 0.5s var(--spring) 0.85s both; }
+.dots i { animation: pop 0.5s var(--spring) both; }
+.dots i:nth-child(2) { animation-delay: 0.08s; }
+.dots i:nth-child(3) { animation-delay: 0.16s; }
+.dots i:nth-child(4) { animation-delay: 0.24s; }
+
+/* ---------- Onboarding steps ---------- */
+/* app.js adds .js to <html>; then only the current step shows. The old step slides away,
+   the new one slides in, and its pieces arrive one after another. */
+
+.js .steps .step { display: none; }
+.js .steps .step.current, .js .steps .step.leaving { display: block; }
+.js .steps .step.leaving { animation: step-out 0.16s ease-in both; }
+.js .steps .step.entering { animation: step-in 0.32s var(--ease-out) both; }
+.js .steps .step.entering > * { animation: rise 0.38s var(--ease-out) both; }
+.js .steps .step.entering > :nth-child(2) { animation-delay: 0.04s; }
+.js .steps .step.entering > :nth-child(3) { animation-delay: 0.08s; }
+.js .steps .step.entering > :nth-child(4) { animation-delay: 0.12s; }
+.js .steps .step.entering > :nth-child(n+5) { animation-delay: 0.16s; }
+
+/* ---------- Respect "Reduce motion" ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0s !important; transition: none !important; }
+}
